@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ORPHEUS</title>
+    <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+    <main class="container">
+        <header class="hero">
+            <div>
+                <p class="eyebrow">ORPHEUS</p>
+                <h1>Turn what you study into something you remember.</h1>
+                <p class="description">Add study material, choose a style, and create a focused learning song.</p>
+            </div>
+        </header>
+
+        <section class="workspace">
+            <label class="field-label" for="content">Study material</label>
+            <textarea id="content" placeholder="Paste your study material here..."></textarea>
+
+            <div class="upload-row">
+                <div class="upload-card">
+                    <label for="file-upload" class="upload-label">Choose file</label>
+                    <input id="file-upload" type="file" accept=".txt,.pdf,.png,.jpg,.jpeg,.webp" />
+                    <p id="file-name" class="upload-hint">TXT, PDF, PNG, JPG, JPEG, WEBP up to 15 MB</p>
+                </div>
+                <div class="pickers">
+                    <label class="field-label" for="genre">Genre</label>
+                    <select id="genre">
+                        <option value="uplifting pop">Uplifting pop</option>
+                        <option value="soft acoustic">Soft acoustic</option>
+                        <option value="modern rock">Modern rock</option>
+                        <option value="hip hop">Hip hop</option>
+                    </select>
+                    <label class="field-label" for="mood">Mood</label>
+                    <select id="mood">
+                        <option value="energetic">Energetic</option>
+                        <option value="calm">Calm</option>
+                        <option value="inspiring">Inspiring</option>
+                    </select>
+                    <label class="field-label" for="language">Language</label>
+                    <select id="language">
+                        <option value="English">English</option>
+                        <option value="Spanish">Spanish</option>
+                    </select>
+                </div>
+            </div>
+
+            <button id="generate" type="button">Create My Song</button>
+            <div id="status" class="status" aria-live="polite"></div>
+        </section>
+
+        <section id="result" class="result hidden">
+            <div class="result-card">
+                <div class="result-header">
+                    <div>
+                        <p class="result-label">Your learning song</p>
+                        <h2 id="title">Song title</h2>
+                        <p id="subtitle" class="result-subtitle"></p>
+                        <a id="download" class="download hidden" download>Download audio</a>
+                    </div>
+                    <audio id="audio" controls preload="metadata"></audio>
+                </div>
+                <div class="result-grid">
+                    <div>
+                        <h3>What you will remember</h3>
+                        <ul id="facts" class="facts"></ul>
+                        <h3>Learning objectives</h3>
+                        <ul id="objectives" class="facts"></ul>
+                    </div>
+                    <div>
+                        <h3>Lyrics</h3>
+                        <pre id="lyrics" class="lyrics"></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <script src="/app.js"></script>
+</body>
+</html>

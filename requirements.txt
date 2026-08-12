@@ -1,0 +1,12 @@
+flask
+flask-cors
+pydantic>=2.0
+transformers>=4.51.0
+torch
+bitsandbytes
+accelerate
+qwen-vl-utils
+Pillow
+PyMuPDF
+soundfile
+librosa
