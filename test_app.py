@@ -3,6 +3,22 @@ from pathlib import Path
 
 import pytest
 from app.server import app
+from app.schemas import QwenOutput
+
+
+def test_qwen_output_normalizes_yue_compatible_variants():
+    output = QwenOutput(
+        title="Cell Song",
+        subject="Biology",
+        topic="Cells",
+        difficulty="Grade 8",
+        genre_tags=["uplifting pop", "educational anthem", "energetic"],
+        key_facts=["Cells have membranes."],
+        learning_objectives=["Identify cell membranes."],
+        lyrics="[verse 1]\nCells have membranes.\n\n[chorus]\nCells are life.",
+        music_prompt="Energetic educational pop song.",
+    )
+    assert output.genre_tags == "uplifting pop educational anthem energetic"
 
 
 def test_health_endpoint():

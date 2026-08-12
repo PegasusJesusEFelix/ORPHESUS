@@ -1,1 +1,1 @@
-from .server import app
+"""ORPHEUS application package."""

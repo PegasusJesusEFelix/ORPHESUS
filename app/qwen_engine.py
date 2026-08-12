@@ -147,14 +147,15 @@ Return ONLY valid JSON with this schema:
   "subject": "...",
   "topic": "...",
   "difficulty": "...",
-  "genre_tags": "...",
+  "genre_tags": "genre instrument mood voice timbre",
   "key_facts": ["..."],
   "learning_objectives": ["..."],
   "lyrics": "...",
   "music_prompt": "..."
 }}
 
-Lyrics should include YuE-friendly sections like [verse], [chorus], and [bridge].
+`genre_tags` must be one string, not a JSON array. Use space-separated YuE tags.
+Lyrics must use YuE section labels. `[verse 1]`, `[verse 2]`, `[chorus]`, and `[bridge]` are valid.
 
 Educational material:
 {text}

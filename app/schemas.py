@@ -1,3 +1,4 @@
+import re
 from typing import List
 
 from pydantic import BaseModel, Field, field_validator
@@ -14,11 +15,21 @@ class QwenOutput(BaseModel):
     lyrics: str = Field(..., min_length=20)
     music_prompt: str = Field(..., min_length=10)
 
+    @field_validator("genre_tags", mode="before")
+    @classmethod
+    def normalize_genre_tags(cls, value: str | List[str]) -> str:
+        if isinstance(value, list):
+            value = " ".join(str(tag).strip() for tag in value if str(tag).strip())
+        if not isinstance(value, str):
+            raise ValueError("Genre tags must be text or a list of text tags.")
+        return value.strip()
+
     @field_validator("lyrics")
     @classmethod
     def validate_lyrics_structure(cls, value: str) -> str:
         normalized = value.lower()
-        if "[chorus]" not in normalized or "[verse]" not in normalized:
+        section_tags = re.findall(r"\[\s*([a-z]+)(?:\s+\d+)?\s*\]", normalized)
+        if "chorus" not in section_tags or "verse" not in section_tags:
             raise ValueError("Lyrics must contain at least one [verse] and one [chorus] section.")
         if value.count("[") != value.count("]"):
             raise ValueError("Lyrics section tags are malformed.")
