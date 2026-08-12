@@ -156,6 +156,7 @@ Return ONLY valid JSON with this schema:
 
 `genre_tags` must be one string, not a JSON array. Use space-separated YuE tags.
 Lyrics must use YuE section labels. `[verse 1]`, `[verse 2]`, `[chorus]`, and `[bridge]` are valid.
+Write exactly two short sections: one verse and one chorus. Keep each section under 70 words.
 
 Educational material:
 {text}
