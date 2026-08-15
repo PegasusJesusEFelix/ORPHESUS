@@ -10,6 +10,13 @@ YUE_STAGE2 = "m-a-p/YuE-s2-1B-general"
 QWEN_GPU = int(os.getenv("ORPHEUS_QWEN_GPU", "0"))
 YUE_GPU = int(os.getenv("ORPHEUS_YUE_GPU", "1"))
 
+# Runtime performance / memory toggles (0 or 1)
+# Set ORPHEUS_PRELOAD_MODELS=0 to delay heavy model loads until first use.
+ORPHEUS_PRELOAD_MODELS = int(os.getenv("ORPHEUS_PRELOAD_MODELS", "1"))
+# Keep Qwen resident on GPU after generation (useful for low-latency repeated calls).
+# Default 0 to free VRAM after a generation to maximize memory available to other processes.
+ORPHEUS_KEEP_QWEN_IN_MEMORY = int(os.getenv("ORPHEUS_KEEP_QWEN_IN_MEMORY", "0"))
+
 UPLOAD_DIR = BASE_DIR / "uploads"
 OUTPUT_DIR = BASE_DIR / "outputs"
 TEMP_DIR = BASE_DIR / "temp"

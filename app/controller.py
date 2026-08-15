@@ -1,13 +1,17 @@
 from pathlib import Path
+import os
 
 from .qwen_engine import QwenEngine
 from .yue_engine import YuEEngine
 from .utils import has_source_overlap, read_text_from_pdf, read_text_from_txt
+from .config import ORPHEUS_KEEP_QWEN_IN_MEMORY
 
 
 class OrpheusController:
     def __init__(self):
-        self.qwen = QwenEngine()
+        # Instantiate Qwen lazily to avoid occupying VRAM at process start.
+        # The QwenEngine will load immediately if environment preloading is enabled.
+        self.qwen = QwenEngine(preload=False)
         self.yue = YuEEngine()
         self.results = {}
 
@@ -27,7 +31,16 @@ class OrpheusController:
             language=language,
         )
         self._validate_source_consistency(song_payload, text)
-        return self._compose(song_payload)
+        result = self._compose(song_payload)
+
+        # Optionally release Qwen memory when not needed for low-memory systems
+        if not ORPHEUS_KEEP_QWEN_IN_MEMORY:
+            try:
+                self.qwen.unload()
+            except Exception:
+                pass
+
+        return result
 
     def _compose(self, song_payload: dict) -> dict:
 

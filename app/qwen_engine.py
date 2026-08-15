@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from pathlib import Path
 from typing import Optional
@@ -10,11 +11,17 @@ from .utils import clean_model_json
 
 
 class QwenEngine:
-    def __init__(self):
+    def __init__(self, preload: Optional[bool] = None):
         self.device = f"cuda:{QWEN_GPU}"
         self.model = None
         self.processor = None
-        self.load()
+        self._loaded = False
+        # allow explicit override, otherwise use environment config
+        if preload is None:
+            preload = bool(ORPHEUS_PRELOAD_MODELS)
+        self._keep_in_memory = bool(ORPHEUS_KEEP_QWEN_IN_MEMORY)
+        if preload:
+            self.load()
 
     def load(self):
         print(f"Loading Qwen3-VL on GPU {QWEN_GPU}...")
@@ -35,7 +42,7 @@ class QwenEngine:
 
         model_options = {
             "quantization_config": quantization,
-            "device_map": {"": QWEN_GPU},
+            "device_map": {"": f"cuda:{QWEN_GPU}"},
             "torch_dtype": torch.float16,
             "low_cpu_mem_usage": True,
             "trust_remote_code": True,
@@ -57,9 +64,28 @@ class QwenEngine:
             QWEN_MODEL,
             trust_remote_code=True,
         )
-
         self.model.eval()
+        self._loaded = True
         print("Qwen3-VL loaded successfully.")
+
+    def unload(self) -> None:
+        """Offload and delete model/processor to free GPU/CPU memory."""
+        if not self._loaded:
+            return
+        try:
+            # Try to move model weights to CPU first
+            self.model.to("cpu")
+        except Exception:
+            pass
+        try:
+            del self.model
+            del self.processor
+        except Exception:
+            pass
+        self.model = None
+        self.processor = None
+        self._loaded = False
+        torch.cuda.empty_cache()
 
     def generate(
         self,
@@ -71,6 +97,10 @@ class QwenEngine:
     ) -> dict:
         if not text and image_path is None:
             raise ValueError("No study material provided to Qwen.")
+
+        if not self._loaded:
+            # lazy load if needed
+            self.load()
 
         prompt = self._build_prompt(text=text, genre=genre, mood=mood, language=language)
 
@@ -98,27 +128,49 @@ class QwenEngine:
             return_tensors="pt",
         )
 
+        # move tensors to the model device without copying non-tensor values
         inputs = {
-            key: value.to(self.device) if hasattr(value, "to") else value
+            key: (value.to(self.device, non_blocking=True) if hasattr(value, "to") else value)
             for key, value in inputs.items()
         }
 
+        # Use inference mode + AMP where appropriate to reduce GPU memory use
         with torch.inference_mode():
-            generated = self.model.generate(
-                **inputs,
-                max_new_tokens=QWEN_MAX_TOKENS,
-                temperature=QWEN_TEMPERATURE,
-                top_p=QWEN_TOP_P,
-                top_k=QWEN_TOP_K,
-                do_sample=True,
-                pad_token_id=self.processor.tokenizer.eos_token_id,
-            )
+            try:
+                with torch.cuda.amp.autocast(device_type="cuda", dtype=torch.float16):
+                    generated = self.model.generate(
+                        **inputs,
+                        max_new_tokens=QWEN_MAX_TOKENS,
+                        temperature=QWEN_TEMPERATURE,
+                        top_p=QWEN_TOP_P,
+                        top_k=QWEN_TOP_K,
+                        do_sample=True,
+                        pad_token_id=self.processor.tokenizer.eos_token_id,
+                    )
+            except Exception:
+                # Fallback to non-autocast generation if AMP causes issues
+                generated = self.model.generate(
+                    **inputs,
+                    max_new_tokens=QWEN_MAX_TOKENS,
+                    temperature=QWEN_TEMPERATURE,
+                    top_p=QWEN_TOP_P,
+                    top_k=QWEN_TOP_K,
+                    do_sample=True,
+                    pad_token_id=self.processor.tokenizer.eos_token_id,
+                )
 
         input_tokens = inputs["input_ids"].shape[-1]
         output_tokens = generated[0, input_tokens:]
 
         raw = self.processor.batch_decode(output_tokens, skip_special_tokens=True)[0]
         parsed = self._parse_json(raw)
+
+        # Free model memory if configured to not keep the model resident
+        if not self._keep_in_memory:
+            try:
+                self.unload()
+            except Exception:
+                pass
         return parsed
 
     def _build_prompt(self, text: str, genre: str, mood: str, language: str) -> str:

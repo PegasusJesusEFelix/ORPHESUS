@@ -54,17 +54,21 @@ class YuEEngine:
             str(YUE_REPETITION_PENALTY),
         ]
 
-        process = subprocess.run(
-            command,
-            cwd=str(self.inference_dir),
-            capture_output=True,
-            text=True,
-        )
+        # Stream output to a log file instead of capturing into memory
+        log_file = work_dir / "yue_run.log"
+        with open(log_file, "w", encoding="utf-8") as lf:
+            process = subprocess.run(
+                command,
+                cwd=str(self.inference_dir),
+                stdout=lf,
+                stderr=lf,
+            )
 
         if process.returncode != 0:
+            # include the tail of the log to help debugging without loading huge outputs
+            tail = log_file.read_text(encoding="utf-8", errors="ignore")[-6000:]
             raise RuntimeError(
-                "YuE generation failed. "
-                + (process.stderr or process.stdout or "")[-6000:]
+                "YuE generation failed. " + tail
             )
 
         audio_files = list(output_dir.rglob("*.wav"))
